@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cerrno>
 
 using namespace std;
 
@@ -18,20 +19,29 @@ Shader::Shader(const GLchar* vertexShaderPath, const GLchar* fragmentShaderPath)
 	fragmentShaderFile.exceptions(ifstream::failbit | ifstream::badbit);
 	try{
 		vertexShaderFile.open(vertexShaderPath);
+		cout << "vertex file open\n";
 		fragmentShaderFile.open(fragmentShaderPath);
+		cout << "fragment file open\n";
 
 		stringstream vertexShaderStream, fragmentShaderStream;
 
 		vertexShaderStream << vertexShaderFile.rdbuf();
+		cout << "vertex file read\n";
 		fragmentShaderStream << fragmentShaderFile.rdbuf();
+		cout << "fragment file read\n";
 
 		vertexShaderFile.close();
+		cout << "vertex file closed\n";
 		fragmentShaderFile.close();
+		cout << "fragment file closed\n";
 
 		vertexCode = vertexShaderStream.str();
+		cout << "vertex code made\n";
 		fragmentCode = fragmentShaderStream.str();
+		cout << "fragment code made\n";
 	}catch(ifstream::failure e){
-		cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: " << endl;
+		cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: " << e.what() << endl;
+
 	}
 
 	const GLchar* vertexShaderCode = vertexCode.c_str();

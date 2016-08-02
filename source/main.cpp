@@ -31,24 +31,35 @@ void setupBinding(GLuint* VBO, GLuint* VAO, GLfloat* vertices);
 //------------------------</PROTOTYPES>----------------------------------------------
 
 //------------------------<CONSTANTS>----------------------------------------------
-const GLchar* vertexShaderPath = "/home/lars-christian/Programing/OpenGLtryout/shaders/simpleVS.vshader";
-const GLchar* fragmentShaderPath = "/home/lars-christian/Programing/OpenGLtryout/shaders/simpleFS.fshader";
-const char* containerTexturePath = "/home/lars-christian/Programing/OpenGLtryout/textures/container.jpg"; 
+const GLchar* vertexShaderPath = "shaders/simpleVS.vshader";
+const GLchar* fragmentShaderPath = "shaders/simpleFS.fshader";
+const char* containerTexturePath = "textures/container.jpg";
+const char* floorTexturePath = "textures/naturalStoneFloor.jpg";
 
 const GLfloat FPS = 60.0;
 const GLfloat UPDATE_PERIODE = 1/FPS;
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
+
+#define ROTATION_SPEED 6.28f/200.0f
+#define TRANSLATION_SPEED 0.05f
 //------------------------</CONSTANTS>----------------------------------------------
 
 //------------------------<GLOBAL VARIABLES>-----------------------------------------
 int containerWidth;
 int containerHeigth;
 
-glm::vec3 transVec(0,0,0);
-glm::vec3 rotVec(0,0,0);
-glm::vec3 scaleVec(1,1,1);
+unsigned char movementStatus;
+#define MOVE_FOREWARD	(1 << 0)
+#define MOVE_BACKWARD 	(1 << 1)
+#define MOVE_LEFT		(1 << 2)
+#define MOVE_RIGHT		(1 << 3)
+#define MOVE_ROTATE_CW	(1 << 4)
+#define MOVE_ROTATE_CCW (1 << 5)
+#define MOVE_UP			(1 << 6)
+#define MOVE_DOWN		(1 << 7)
+
 
 //------------------------</GLOBAL VARIABLES>----------------------------------------
 
@@ -71,7 +82,7 @@ int main(){
 	Shader shader(vertexShaderPath, fragmentShaderPath);
 
 	//Set up vertex data (and buffers)) and attribute pointers
-	GLfloat vertices[] = {
+	GLfloat containterVertices[] = {
 		//coords				colors		texcoord
 		-0.5f, -0.5f, -0.5f,	0, 0, 0,	0, 0,	//bottom left back
 		0.5f, -0.5f, -0.5f,		0, 0, 0,	1, 0,	//bottom right back
@@ -83,7 +94,7 @@ int main(){
 		-0.5f, 0.5f, 0.5f,		0, 0, 0,	1, 1,	//top left front
 	};
 
-	GLuint indices[] = {
+	GLuint containerIndices[] = {
 		0, 1, 2,	//back lower
 		0, 2, 3,	//back upper
 		1, 5, 6,	//right lower
@@ -98,6 +109,19 @@ int main(){
 		0, 6, 4,	//bottom back
 	};
 
+	GLfloat floorVertices[] = {
+		//coords				colors		texcoord
+		-1.0f, -1.0f, -1.0f,	0, 0, 0,	0, 0, 	//left back
+		1.0f, -1.0f, -1.0f,		0, 0, 0,	1, 0,	//right back
+		-1.0f, -1.0f, 1.0f,		0, 0, 0,	0, 1,	//left front
+		1.0f, -1.0f, 1.0f,		0, 0, 0, 	1, 1,	//right front
+	};
+
+	GLuint floorIndices[] = {
+		0, 1, 2,
+		1, 2, 3,
+	};
+
 	GLuint VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -106,10 +130,10 @@ int main(){
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(containterVertices), containterVertices, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(containerIndices), containerIndices, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
@@ -139,6 +163,11 @@ int main(){
 	std::cout << "Texture binding complete" << std::endl;
 	glEnable(GL_DEPTH_TEST);
 	std::cout << "Setup complete, entering Game Loop" << std::endl;
+
+	glm::vec3 transVec(0,0,0);
+	glm::vec3 rotVec(0,0,0);
+	glm::vec3 scaleVec(1,1,1);
+
 	while(!glfwWindowShouldClose(window)){
 		GLfloat loopStartTime = glfwGetTime();
 		glfwPollEvents();
@@ -147,7 +176,32 @@ int main(){
 		glm::mat4 view;
 		glm::mat4 projection;
 
+		
+
 		model = glm::translate(model, glm::vec3(0.0,0.0,-1.0));
+
+		if (movementStatus & MOVE_ROTATE_CCW){
+			rotVec.y -= ROTATION_SPEED;
+		}
+		if (movementStatus & MOVE_ROTATE_CW){
+			rotVec.y += ROTATION_SPEED;
+		}
+		if (movementStatus & MOVE_FOREWARD){
+			transVec.z += TRANSLATION_SPEED*cos(rotVec.y);
+			transVec.x -= TRANSLATION_SPEED*sin(rotVec.y);
+		}
+		if (movementStatus & MOVE_BACKWARD){
+			transVec.z -= TRANSLATION_SPEED*cos(rotVec.y);
+			transVec.x += TRANSLATION_SPEED*sin(rotVec.y);
+		}
+		if (movementStatus & MOVE_RIGHT){	
+			transVec.x -= TRANSLATION_SPEED*cos(rotVec.y);
+			transVec.z -= TRANSLATION_SPEED*sin(rotVec.y);
+		}
+		if (movementStatus & MOVE_LEFT){	
+			transVec.x += TRANSLATION_SPEED*cos(rotVec.y);
+			transVec.z += TRANSLATION_SPEED*sin(rotVec.y);
+		}
 
 		view = glm::rotate(view, rotVec.x,glm::vec3(1.0,0.0,0.0));
 		view = glm::rotate(view, rotVec.y,glm::vec3(0.0,1.0,0.0));
@@ -227,47 +281,64 @@ GLenum setupGLEW(){
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode){
-	switch(key){
-		case GLFW_KEY_ESCAPE:
-			if(action == GLFW_PRESS){
+	if (action == GLFW_PRESS){
+		switch(key){
+			case GLFW_KEY_ESCAPE:
 				std::cout << "Escape key registered" << std::endl;
 				glfwSetWindowShouldClose(window, GL_TRUE);
-			}
-			break;
-		case GLFW_KEY_UP:
-			if(action == GLFW_PRESS){
-				transVec.z += 0.1f*cos(rotVec.y);
-				transVec.x -= 0.1f*sin(rotVec.y);
-			}
-			break;
-		case GLFW_KEY_DOWN:
-			if(action == GLFW_PRESS){
-				transVec.z -= 0.1f*cos(rotVec.y);
-				transVec.x += 0.1f*sin(rotVec.y);
-			}
-			break;
-		case GLFW_KEY_RIGHT:
-			if(action == GLFW_PRESS){
-				transVec.x -= 0.1f*cos(rotVec.y);
-				transVec.z -= 0.1f*sin(rotVec.y);
-			}
-			break;
-		case GLFW_KEY_LEFT:
-			if(action == GLFW_PRESS){
-				transVec.x += 0.1f*cos(rotVec.y);
-				transVec.z += 0.1f*sin(rotVec.y);
-			}
-			break;
-		case GLFW_KEY_A:
-			if(action == GLFW_PRESS){
-				rotVec.y -= 6.28f/20.0f;
-			}
-			break;
-		case GLFW_KEY_D:
-			if(action == GLFW_PRESS){
-				rotVec.y += 6.28f/20.0f;
-			}
-			break;
+				break;
+
+			case GLFW_KEY_W:
+				movementStatus |= MOVE_FOREWARD;				
+				break;
+
+			case GLFW_KEY_S:
+				movementStatus |= MOVE_BACKWARD;				
+				break;
+
+			case GLFW_KEY_E:
+				movementStatus |= MOVE_RIGHT;				
+				break;
+
+			case GLFW_KEY_Q:
+				movementStatus |= MOVE_LEFT;				
+				break;
+
+			case GLFW_KEY_A:
+				movementStatus |= MOVE_ROTATE_CCW;		
+				break;
+
+			case GLFW_KEY_D:
+				movementStatus |= MOVE_ROTATE_CW;			
+				break;
+		}
+	}
+	else if (action == GLFW_RELEASE){
+		switch(key){
+			case GLFW_KEY_W:
+				movementStatus &= ~MOVE_FOREWARD;								
+				break;
+
+			case GLFW_KEY_S:
+				movementStatus &= ~MOVE_BACKWARD;				
+				break;
+
+			case GLFW_KEY_E:
+				movementStatus &= ~MOVE_RIGHT;				
+				break;
+
+			case GLFW_KEY_Q:
+				movementStatus &= ~MOVE_LEFT;				
+				break;
+
+			case GLFW_KEY_A:
+				movementStatus &= ~MOVE_ROTATE_CCW;				
+				break;
+
+			case GLFW_KEY_D:
+				movementStatus &= ~MOVE_ROTATE_CW;			
+				break;
+		}
 	}
 }
 //---------------------------</FUNCTIONS>-------------------------------

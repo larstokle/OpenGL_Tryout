@@ -109,15 +109,15 @@ int main(){
 		3, 2, 6,	//top front
 		3, 6, 7,	//top back
 		0, 1, 5,	//bottom front
-		0, 6, 4,	//bottom back
+		0, 5, 4,	//bottom back
 	};
 
 	GLfloat floorVertices[] = {
 		//coords				colors		texcoord
-		-1.0f, -1.0f, -1.0f,	0, 0, 0,	0, 0, 	//left back
-		1.0f, -1.0f, -1.0f,		0, 0, 0,	1, 0,	//right back
-		-1.0f, -1.0f, 1.0f,		0, 0, 0,	0, 1,	//left front
-		1.0f, -1.0f, 1.0f,		0, 0, 0, 	1, 1,	//right front
+		-3.0f, -0.5f, -3.0f,	0, 0, 0,	0, 0, 	//left back
+		3.0f, -0.5f, -3.0f,		0, 0, 0,	1, 0,	//right back
+		-3.0f, -0.5f, 3.0f,		0, 0, 0,	0, 1,	//left front
+		3.0f, -0.5f, 3.0f,		0, 0, 0, 	1, 1,	//right front
 	};
 
 	GLuint floorIndices[] = {
@@ -257,22 +257,25 @@ int main(){
 		GLint modelMatrixLocation = glGetUniformLocation(shader.Program, "model");
 		GLint viewMatrixLocation = glGetUniformLocation(shader.Program, "view");
 		GLint projectionMatrixLocation = glGetUniformLocation(shader.Program, "projection");
-		glBindTexture(GL_TEXTURE_2D, texture[0]);
-		shader.use();
 		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projection));
-		glBindVertexArray(VAO[0]);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
 
-		glBindTexture(GL_TEXTURE_2D, texture[1]);
 		shader.use();
-		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(model));
-		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projection));
-		glBindVertexArray(VAO[1]);
-		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+		//floor draw
+		{
+			glBindTexture(GL_TEXTURE_2D, texture[1]);
+			glBindVertexArray(VAO[1]);
+			glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+		}
+		//container draw
+		{
+			glBindTexture(GL_TEXTURE_2D, texture[0]);
+			glBindVertexArray(VAO[0]);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		}
+		
+
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);

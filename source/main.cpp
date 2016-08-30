@@ -50,6 +50,9 @@ const int WINDOW_HEIGHT = 600;
 int containerWidth;
 int containerHeigth;
 
+int floorWidth;
+int floorHeight;
+
 unsigned char movementStatus;
 #define MOVE_FOREWARD	(1 << 0)
 #define MOVE_BACKWARD 	(1 << 1)
@@ -122,28 +125,52 @@ int main(){
 		1, 2, 3,
 	};
 
-	GLuint VBO, VAO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
+	uint numObjects = 2;
 
-	glBindVertexArray(VAO);
+	GLuint VBO[numObjects], VAO[numObjects], EBO[numObjects];
+	glGenVertexArrays(numObjects, VAO);
+	glGenBuffers(numObjects, VBO);
+	glGenBuffers(numObjects, EBO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(containterVertices), containterVertices, GL_STATIC_DRAW);
+	//container  binding
+	{
+		glBindVertexArray(VAO[0]);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(containerIndices), containerIndices, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(containterVertices), containterVertices, GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(containerIndices), containerIndices, GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
 
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
+	}
+
+	//floor  binding
+	{
+		glBindVertexArray(VAO[1]);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floorIndices), floorIndices, GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
+
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
+	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -152,21 +179,33 @@ int main(){
 	std::cout << "initial binding complete" << std::endl;
 
 	//textures
-	unsigned char* containerImage = SOIL_load_image(containerTexturePath, &containerWidth, &containerHeigth, 0, SOIL_LOAD_RGB);
-	GLuint contianerTexture;
-	glGenTextures(1, &contianerTexture);
-	glBindTexture(GL_TEXTURE_2D, contianerTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, containerWidth, containerHeigth, 0, GL_RGB, GL_UNSIGNED_BYTE, containerImage);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	SOIL_free_image_data(containerImage);
+	GLuint texture[numObjects];
+	glGenTextures(2, texture);
+	//containter texture
+	{
+		unsigned char* containerImage = SOIL_load_image(containerTexturePath, &containerWidth, &containerHeigth, 0, SOIL_LOAD_RGB);
+		glBindTexture(GL_TEXTURE_2D, texture[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, containerWidth, containerHeigth, 0, GL_RGB, GL_UNSIGNED_BYTE, containerImage);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		SOIL_free_image_data(containerImage);
+	}
+	//floor texture
+	{
+		unsigned char* floorImage = SOIL_load_image(floorTexturePath, &floorWidth, &floorHeight, 0, SOIL_LOAD_RGB);
+		glBindTexture(GL_TEXTURE_2D, texture[1]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, floorWidth, floorHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, floorImage);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		SOIL_free_image_data(floorImage);
+	}
 	glBindTexture(GL_TEXTURE_2D, 0);
 	std::cout << "Texture binding complete" << std::endl;
-	glEnable(GL_DEPTH_TEST);
-	std::cout << "Setup complete, entering Game Loop" << std::endl;
 
 	glm::vec3 transVec(0,0,0);
 	glm::vec3 rotVec(0,0,0);
 	glm::vec3 scaleVec(1,1,1);
+
+	glEnable(GL_DEPTH_TEST);
+	std::cout << "Setup complete, entering Game Loop" << std::endl;
 
 	while(!glfwWindowShouldClose(window)){
 		GLfloat loopStartTime = glfwGetTime();
@@ -218,13 +257,22 @@ int main(){
 		GLint modelMatrixLocation = glGetUniformLocation(shader.Program, "model");
 		GLint viewMatrixLocation = glGetUniformLocation(shader.Program, "view");
 		GLint projectionMatrixLocation = glGetUniformLocation(shader.Program, "projection");
-		glBindTexture(GL_TEXTURE_2D, contianerTexture);
+		glBindTexture(GL_TEXTURE_2D, texture[0]);
 		shader.use();
 		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projection));
-		glBindVertexArray(VAO);
+		glBindVertexArray(VAO[0]);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		glBindTexture(GL_TEXTURE_2D, texture[1]);
+		shader.use();
+		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, glm::value_ptr(projection));
+		glBindVertexArray(VAO[1]);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
@@ -237,9 +285,9 @@ int main(){
 
 	}
 	std::cout << "window should close registered" << std::endl;
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(numObjects, VAO);
+	glDeleteBuffers(numObjects, VBO);
+	glDeleteBuffers(numObjects, EBO);
 
 	glfwTerminate();
 	std::cout << "Sources Deallocated and GLFW Terminated" << std::endl;
